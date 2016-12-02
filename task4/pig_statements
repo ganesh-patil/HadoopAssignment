@@ -1,0 +1,33 @@
+ 
+ // Pig statements :
+ 
+ Before processing Load all data inside /user/hadoop/pig_data/
+ 
+ departments = LOAD '/user/hadoop/pig_data/departments.txt' USING PigStorage(',') as ( dept_no:chararray, dept_name:chararray);
+
+dept_manager = LOAD ' /user/hadoop/pig_data/dept_manager.txt' USING PigStorage(',') as ( dept_no:chararray, emp_no:int, from_date:chararray, to_date:chararray);
+
+
+department_managers =  JOIN departments BY dept_no, dept_manager BY dept_no;
+
+department_managers  = FOREACH department_managers GENERATE departments::dept_no,dept_name,emp_no,from_date, to_date;
+
+
+dept_emp = LOAD ' /user/hadoop/pig_data/dept_emp.txt' USING PigStorage(',') as ( emp_no:int, dept_no:chararray,  from_date:chararray, to_date:chararray);
+
+department_managers_employee =  JOIN department_managers BY dept_no, dept_emp BY dept_no;
+
+REGISTER checkDateRange.jar;
+
+department_managers_employee =  FILTER department_managers_employee BY true == checkDateRange(department_managers::dept_manager::from_date,department_managers::dept_manager::to_date,dept_emp::from_date,dept_emp::to_date);
+
+
+salaries = LOAD ' /user/hadoop/pig_data/salaries.txt' USING PigStorage(',') as ( emp_no:int, salary:int,  from_date:chararray, to_date:chararray);
+
+
+department_managers_employee_salaries = JOIN department_managers_employee BY dept_emp::emp_no, salaries BY emp_no;
+
+
+department_managers_employee_salaries =  FILTER department_managers_employee_salaries BY true == checkDateRange(department_managers_employee::department_managers::dept_manager::from_date,department_managers_employee::department_managers::dept_manager::to_date,salaries::from_date,salaries::to_date);
+
+store department_managers_employee_salaries INTO 'department_managers_employee_salaries.txt' using PigStorage(',');
