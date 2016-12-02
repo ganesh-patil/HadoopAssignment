@@ -1,0 +1,22 @@
+Hive Queries;
+// create all required tables;
+
+CREATE TABLE IF NOT EXISTS employees ( emp_no bigint, birth_date date, first_name String, last_name String, gender CHAR(1),  hire_date date) ROW FORMAT DELIMITED FIELDS TERMINATED BY ‘,’ LINES TERMINATED BY '\n' STORED AS TEXTFILE;
+
+
+CREATE TABLE IF NOT EXISTS salaries ( emp_no bigint, salary bigint, from_date date, to_date date) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS TEXTFILE;
+
+
+CREATE TABLE IF NOT EXISTS titles( emp_no bigint, title String, from_date date, to_date date) ROW FORMAT DELIMITED FIELDS TERMINATED BY ',' LINES TERMINATED BY '\n' STORED AS TEXTFILE;
+
+// Load data in all the tables 
+
+LOAD DATA LOCAL INPATH 'titles.txt’ OVERWRITE INTO TABLE titles;
+
+LOAD DATA LOCAL INPATH 'employees.txt' OVERWRITE INTO TABLE employees;
+
+LOAD DATA LOCAL INPATH 'salaries.txt' OVERWRITE INTO TABLE salaries;
+
+// Hive Query to Export Data 
+
+$bin/hive -e "select s.emp_no, e.birth_date, e.first_name, e.last_name,  t.title as designation, AVG(s.salary) FROM salaries s JOIN  titles t ON s.emp_no = t.emp_no  JOIN employees e ON s.emp_no = e.emp_no WHERE t.title LIKE '%Senior%' GROUP BY s.emp_no, e.birth_date, e.first_name, e.last_name, t.title " > result.csv
