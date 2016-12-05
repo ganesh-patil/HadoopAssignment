@@ -1,0 +1,37 @@
+Pig statements 
+
+departments = LOAD '/user/ganesh/pig_data/departments.txt' USING PigStorage(',') as ( dept_no:chararray, dept_name:chararray);
+
+dept_emp = LOAD ' /user/ganesh/pig_data/dept_emp.txt' USING PigStorage(',') as ( emp_no:int, dept_no:chararray,  from_date:chararray, to_date:chararray);
+
+employees = LOAD ' /user/ganesh/pig_data/employees.txt' USING PigStorage(',') as ( emp_no:int, birth_date:chararray,  first_name:chararray, last_name:chararray, gender:chararray, hire_date:chararray);
+
+salaries = LOAD ' /user/ganesh/pig_data/salaries.txt' USING PigStorage(',') as ( emp_no:int, salary:int,  from_date:chararray, to_date:chararray);
+
+
+dept_emp_salaries  = JOIN dept_emp BY emp_no, salaries BY emp_no;
+
+REGISTER checkDateRange2.jar;
+
+
+dept_emp_salaries = JOIN dept_emp_salaries BY dept_emp::dept_no, departments BY dept_no;
+
+dept_emp_salaries =  FILTER dept_emp_salaries BY true == checkDateRange2(dept_emp::from_date, dept_emp::to_date,salaries::from_date,salaries::to_date);
+
+dept_emp_salaries_employees = JOIN dept_emp_salaries BY dept_emp_salaries::dept_emp::emp_no, employees BY emp_no;
+
+
+dept_emp_salaries_employees = FOREACH dept_emp_salaries_employees generate dept_emp_salaries::departments::dept_name,  dept_emp_salaries::dept_emp_salaries::dept_emp::from_date, dept_emp_salaries::dept_emp_salaries::dept_emp::to_date, employees::gender,dept_emp_salaries::dept_emp_salaries::salaries::salary
+
+STORE dept_emp_salaries_employees INTO ' /user/ganesh/task2_pig_output ' USING PigStorage (',');
+
+//Hive Queries :
+
+CREATE TABLE IF NOT EXISTS dept_emp_salaries_employees ( department String, from_date date, to_date date,  gender CHAR(1),  avg_slary bigint) ROW FORMAT DELIMITED FIELDS TERMINATED BY ‘,’ LINES TERMINATED BY '\n' STORED AS TEXTFILE;
+
+LOAD DATA LOCAL INPATH '/Users/ganesh/hadoop/inputs/dept_emp_salaries_employees.txt’ OVERWRITE INTO TABLE dept_emp_salaries_employees;
+
+select  department , floor(YEAR(from_date)/10)*10 as d ,gender,  AVG(avg_slary) from dept_emp_salaries_employees GROUP BY department,floor(YEAR(from_date)/10)*10 , gender;
+
+//Write final output to csv
+$ bin/hive -e "select  department , floor(YEAR(from_date)/10)*10 as decade ,gender,  AVG(avg_slary) from dept_emp_salaries_employees GROUP BY department,floor(YEAR(from_date)/10)*10 , gender" > task2_final_output.csv
