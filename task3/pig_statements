@@ -30,3 +30,15 @@ dept_emp_titles_group_employees_departments  = ORDER dept_emp_titles_group_emplo
 dept_emp_titles_group_employees_departments = FOREACH dept_emp_titles_group_employees_departments generate dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::dept_emp::emp_no, dept_emp_titles_group_employees::employees::first_name, dept_emp_titles_group_employees::employees::last_name, dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::titles::title, departments::dept_name;
 
  dept_emp_titles_group_employees_departments = STORE dept_emp_titles_group_employees_departments INTO ‘/user/ganesh/task3’ USING PigStorage (',');
+ 
+ 
+ //Mapreduce Program;
+ 
+ //run mapreduce
+ 
+ $hadoop jar EmpMovement.jar EmpMovement [input file path(above generated file) ] [output file path] 
+ 
+ // Write output file to csv 
+ $cat part-r-00000 > task3_final_output.csv
+ 
+ 
