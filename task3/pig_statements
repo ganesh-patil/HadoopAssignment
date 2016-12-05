@@ -1,0 +1,32 @@
+Pig Commands :
+
+dept_emp = LOAD ' /user/ganesh/pig_data/dept_emp.txt' USING PigStorage(',') as ( emp_no:int, dept_no:chararray,  from_date:chararray, to_date:chararray);
+
+titles = LOAD ' /user/ganesh/pig_data/titles.txt' USING PigStorage(',') as ( emp_no:int, title:chararray,  from_date:chararray, to_date:chararray);
+
+dept_emp_titles = JOIN dept_emp BY emp_no, titles BY emp_no;
+
+dept_emp_titles_group = GROUP dept_emp_titles BY dept_emp::emp_no;
+
+dept_emp_titles_group = foreach dept_emp_titles_group generate COUNT(dept_emp_titles) as c ,dept_emp_titles;
+
+dept_emp_titles_group = filter dept_emp_titles_group BY c > 1;
+
+dept_emp_titles_group = foreach dept_emp_titles_group generate FLATTEN(dept_emp_titles);
+
+
+
+employees = LOAD ' /user/ganesh/pig_data/employees.txt' USING PigStorage(',') as ( emp_no:int, birth_date:chararray,  first_name:chararray, last_name:chararray, gender:chararray, hire_date:chararray);
+
+dept_emp_titles_group_employees = JOIN dept_emp_titles_group BY dept_emp_titles::dept_emp::emp_no, employees BY emp_no;
+
+departments = LOAD '/user/ganesh/pig_data/departments.txt' USING PigStorage(',') as ( dept_no:chararray, dept_name:chararray);
+
+——
+dept_emp_titles_group_employees_departments = JOIN  dept_emp_titles_group_employees BY dept_emp_titles_group::dept_emp_titles::dept_emp::dept_no, departments BY dept_no;
+
+dept_emp_titles_group_employees_departments  = ORDER dept_emp_titles_group_employees_departments BY dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::dept_emp::emp_no ASC , dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::titles::from_date  ASC;
+
+dept_emp_titles_group_employees_departments = FOREACH dept_emp_titles_group_employees_departments generate dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::dept_emp::emp_no, dept_emp_titles_group_employees::employees::first_name, dept_emp_titles_group_employees::employees::last_name, dept_emp_titles_group_employees::dept_emp_titles_group::dept_emp_titles::titles::title, departments::dept_name;
+
+ dept_emp_titles_group_employees_departments = STORE dept_emp_titles_group_employees_departments INTO ‘/user/ganesh/task3’ USING PigStorage (',');
